@@ -32,6 +32,7 @@ export const InventoryStockReturnValidator = z.object({
     employeeId: z.number("Employee ID is required"),
     note: z.string().trim().optional().nullable(),
     items: z.array(z.object({
+        stockOutItemId: z.number().int().positive().optional(),
         variantId: z.number("Variant ID is required"),
         branchId: z.number("Branch ID is required"),
         quantity: z.number().int().min(1, "Quantity must be at least 1"),

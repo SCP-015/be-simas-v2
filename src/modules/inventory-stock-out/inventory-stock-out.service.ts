@@ -158,8 +158,8 @@ export class InventoryStockOutService {
     /**
      * Return stock an employee holds. Returned stock always comes back as `used`
      * (per policy) at the given branch. Cannot exceed what the employee still
-     * holds; lines are consumed oldest-first (FIFO), regardless of which
-     * stock-out document they originally came from.
+     * holds. A UI return may target one exact stock-out line; older callers
+     * without a line ID retain oldest-first (FIFO) behavior.
      */
     async returnStock(data: InventoryStockReturnValidator, userId?: number, ctx: InventoryStockOutHandoverContext = {}): Promise<void> {
         const employee = await this.employeeService.getById(data.employeeId)
@@ -173,7 +173,16 @@ export class InventoryStockOutService {
             const inventoryIds = new Set<number>()
             for (const item of data.items) {
                 const activeItems = await this.repository.findActiveItems(data.employeeId, item.variantId, manager, true)
-                const remaining = activeItems.reduce((sum, i) => sum + (i.quantity - i.quantityReturned), 0)
+                const targetItems = item.stockOutItemId !== undefined
+                    ? activeItems.filter((activeItem) => activeItem.id === item.stockOutItemId)
+                    : activeItems
+                if (item.stockOutItemId !== undefined && targetItems.length === 0) {
+                    throw new BadRequestException(`Stock-out item ${item.stockOutItemId} is not an active holding for this employee and variant`)
+                }
+                if (item.stockOutItemId !== undefined && targetItems[0].branchId !== item.branchId) {
+                    throw new BadRequestException(`Stock-out item ${item.stockOutItemId} does not belong to the selected branch`)
+                }
+                const remaining = targetItems.reduce((sum, i) => sum + (i.quantity - i.quantityReturned), 0)
                 if (remaining < item.quantity) {
                     const variant = await this.inventoryVariantService.getById(item.variantId).catch(() => null)
                     throw new BadRequestException(`Cannot return ${item.quantity} of "${variant?.name || item.variantId}" — employee only holds ${remaining}`)
@@ -184,7 +193,7 @@ export class InventoryStockOutService {
 
                 // Consume the employee's lines oldest-first.
                 let toReturn = item.quantity
-                for (const activeItem of activeItems) {
+                for (const activeItem of targetItems) {
                     if (toReturn <= 0) break
                     const avail = activeItem.quantity - activeItem.quantityReturned
                     if (avail <= 0) continue

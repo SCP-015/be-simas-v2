@@ -187,6 +187,35 @@ describe("Inventory Stock Out API", () => {
         expect(stockOuts.body.data[0].items[0]).toMatchObject({ quantity: 4, quantityReturned: 3, quantityRemaining: 1 })
     })
 
+    test("return from a selected line only updates that line when the same variant has multiple conditions", async () => {
+        await setStock(branchA, [{ variantId: variant1, new: 1, used: 1 }])
+        const employeeId = await createEmployee()
+
+        const assignedNew = await request(app, "/api/inventory-stock-out", {
+            method: "POST", headers: authHeaders,
+            body: { isEmployee: true, employeeId, items: [{ variantId: variant1, branchId: branchA, condition: "new", quantity: 1 }] },
+        })
+        const assignedUsed = await request(app, "/api/inventory-stock-out", {
+            method: "POST", headers: authHeaders,
+            body: { isEmployee: true, employeeId, items: [{ variantId: variant1, branchId: branchA, condition: "used", quantity: 1 }] },
+        })
+        const newItemId = assignedNew.body.data.items[0].id
+        const usedItemId = assignedUsed.body.data.items[0].id
+
+        const returned = await request(app, "/api/inventory-stock-out/return", {
+            method: "POST", headers: authHeaders,
+            body: { employeeId, items: [{ stockOutItemId: usedItemId, variantId: variant1, branchId: branchA, quantity: 1 }] },
+        })
+        expect(returned.status).toBe(200)
+        expect(await qtyAt(branchA, variant1, "new")).toBe(0)
+        expect(await qtyAt(branchA, variant1, "used")).toBe(1)
+
+        const stockOuts = await request(app, `/api/inventory-stock-out?employeeId=${employeeId}`, { headers: authHeaders })
+        const lines = stockOuts.body.data.flatMap((stockOut: any) => stockOut.items)
+        expect(lines.find((item: any) => item.id === newItemId)).toMatchObject({ quantityRemaining: 1, quantityReturned: 0 })
+        expect(lines.find((item: any) => item.id === usedItemId)).toMatchObject({ quantityRemaining: 0, quantityReturned: 1 })
+    })
+
     test("assign with attachmentIds: the document shows the attachment", async () => {
         await setStock(branchA, [{ variantId: variant1, new: 10, used: 0 }, { variantId: variant2, new: 10, used: 0 }])
         const employeeId = await createEmployee()
