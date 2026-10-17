@@ -14,6 +14,7 @@ import { User } from "../../user/entities/user.entity"
 import { Employee } from "../../employee/entities/employee.entity"
 import { HandoverItem } from "./handover-item.entity"
 import { HandoverStockItem } from "./handover-stock-item.entity"
+import { HandoverCustomItem } from "./handover-custom-item.entity"
 import type { HandoverTransactionType, HandoverStatus } from "../../../core/enums"
 
 @Entity("handovers")
@@ -79,6 +80,9 @@ export class Handover {
 
     @OneToMany(() => HandoverStockItem, (item) => item.handover)
     stockItems?: Relation<HandoverStockItem[]>
+
+    @OneToMany(() => HandoverCustomItem, (item) => item.handover)
+    customItems?: Relation<HandoverCustomItem[]>
 
     @CreateDateColumn({ name: "created_at" })
     createdAt!: Date

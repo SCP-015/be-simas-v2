@@ -16,6 +16,14 @@ const HandoverStockItemValidator = z.object({
     note: z.string().trim().optional().nullable(),
 })
 
+const HandoverCustomItemValidator = z.object({
+    name: z.string().trim().min(1, "Custom item name is required"),
+    code: z.string().trim().optional().nullable(),
+    quantity: z.number().int().min(1, "Quantity must be at least 1"),
+    unit: z.string().trim().optional().nullable(),
+    note: z.string().trim().optional().nullable(),
+})
+
 export const CreateHandoverValidator = z.object({
     receivedById: z.number("Received by ID is required"),
     handedOverById: z.number("Handed over by ID is required"),
@@ -27,11 +35,12 @@ export const CreateHandoverValidator = z.object({
     // A handover may carry asset lines, stock lines, or both.
     items: z.array(HandoverItemValidator).optional(),
     stockItems: z.array(HandoverStockItemValidator).optional(),
+    customItems: z.array(HandoverCustomItemValidator).optional(),
     // Supporting documents uploaded alongside the generated signing form.
     attachmentIds: z.array(z.number()).optional(),
 }).superRefine((data, ctx) => {
-    if ((!data.items || data.items.length === 0) && (!data.stockItems || data.stockItems.length === 0)) {
-        ctx.addIssue({ code: "custom", path: ["items"], message: "At least one asset or stock item is required" })
+    if ((!data.items || data.items.length === 0) && (!data.stockItems || data.stockItems.length === 0) && (!data.customItems || data.customItems.length === 0)) {
+        ctx.addIssue({ code: "custom", path: ["items"], message: "At least one asset, stock item, or custom item is required" })
     }
 })
 

@@ -1348,7 +1348,7 @@ components:
     CreateHandoverRequest:
       type: object
       required: [receivedById, handedOverById, transactionType]
-      description: "A handover may carry asset lines (`items`), stock lines (`stockItems`), or both together — at least one of the two must be non-empty. A return may only include assets and/or stock currently held by `handedOverById`."
+      description: "A handover may carry asset lines (`items`), stock lines (`stockItems`), custom lines (`customItems`), or any combination — at least one must be non-empty. Custom lines are supported for return handovers and do not change inventory balances."
       properties:
         receivedById: { type: integer, example: 1, description: "Employee receiving (penerima)" }
         handedOverById: { type: integer, example: 2, description: "Employee handing over (penyerah)" }
@@ -1377,6 +1377,18 @@ components:
               condition: { type: string, enum: [new, used] }
               quantity: { type: integer, minimum: 1, example: 4 }
               note: { type: string, nullable: true }
+        customItems:
+          type: array
+          description: "Unregistered item lines for return handovers (for example ID cards). These are recorded in the handover/PDF but do not change inventory balances."
+          items:
+            type: object
+            required: [name, quantity]
+            properties:
+              name: { type: string, example: "ID Card" }
+              code: { type: string, nullable: true, example: "CARD-001" }
+              quantity: { type: integer, minimum: 1, example: 1 }
+              unit: { type: string, nullable: true, example: "pcs" }
+              note: { type: string, nullable: true, example: "Good condition" }
         attachmentIds:
           type: array
           description: "Supporting documents to attach, in addition to the signing form generated on create. These keep pointing at their own files when the signed document replaces the form."
@@ -1489,6 +1501,18 @@ components:
                       id: { type: integer }
                       name: { type: string }
                       code: { type: string, nullable: true }
+        customItems:
+          type: array
+          description: "Unregistered item lines recorded on the handover and included in the PDF."
+          items:
+            type: object
+            properties:
+              id: { type: integer, example: 1 }
+              name: { type: string, example: "ID Card" }
+              code: { type: string, nullable: true, example: "CARD-001" }
+              quantity: { type: integer, example: 1 }
+              unit: { type: string, nullable: true, example: "pcs" }
+              note: { type: string, nullable: true, example: "Good condition" }
 
     AssignAssetRequest:
       type: object

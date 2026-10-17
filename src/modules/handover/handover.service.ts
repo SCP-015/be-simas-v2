@@ -134,6 +134,11 @@ export class HandoverService {
         const isReturn = data.transactionType === "return"
         const items = data.items ?? []
         const stockItems = data.stockItems ?? []
+        const customItems = data.customItems ?? []
+
+        if (customItems.length > 0 && !isReturn) {
+            throw new BadRequestException("Custom items are only supported for return handovers")
+        }
 
         // Receiving employee must exist & be active.
         const receivedByEmployee = await this.employeeService.getById(data.receivedById)
@@ -201,6 +206,17 @@ export class HandoverService {
                     condition: si.condition,
                     quantity: si.quantity,
                     note: si.note ?? null,
+                }, manager)
+            }
+
+            for (const ci of customItems) {
+                await this.repository.saveCustomItem({
+                    handoverId: created.id,
+                    name: ci.name,
+                    code: ci.code ?? null,
+                    quantity: ci.quantity,
+                    unit: ci.unit ?? null,
+                    note: ci.note ?? null,
                 }, manager)
             }
 

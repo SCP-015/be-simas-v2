@@ -213,7 +213,13 @@ export async function generateHandoverPdf(handover: Handover): Promise<Uint8Arra
             note: [branch, item.note || ""].filter(Boolean).join(" — ") || "-",
         }
     })
-    const rows = [...assetRows, ...stockRows]
+    const customRows = (handover.customItems ?? []).map((item) => ({
+        name: item.name,
+        code: item.code || "-",
+        jumlah: `${item.quantity}${item.unit ? ` ${item.unit}` : ""}`,
+        note: item.note || "-",
+    }))
+    const rows = [...assetRows, ...stockRows, ...customRows]
 
     rows.forEach((item, idx) => {
         const no = String(idx + 1)

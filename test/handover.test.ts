@@ -167,6 +167,30 @@ describe("Asset Handover API", () => {
         expect(res.body.data.items[0].note).toBe("Keterangan item A")
     })
 
+    test("POST /api/handover - persists custom return items", async () => {
+        const res = await request(app, "/api/handover", {
+            method: "POST",
+            headers: authHeaders,
+            body: createHandoverData([], employeeId, {
+                receivedById: employeeId2,
+                handedOverById: employeeId,
+                transactionType: "return",
+                items: [],
+                customItems: [{ name: "ID Card", code: "CARD-001", quantity: 1, unit: "pcs", note: "Good condition" }],
+            }),
+        })
+
+        expect(res.status).toBe(201)
+        expect(res.body.data.customItems).toHaveLength(1)
+        expect(res.body.data.customItems[0]).toMatchObject({
+            name: "ID Card",
+            code: "CARD-001",
+            quantity: 1,
+            unit: "pcs",
+            note: "Good condition",
+        })
+    })
+
     test("POST /api/handover - validation error when items empty", async () => {
         const res = await request(app, "/api/handover", {
             method: "POST",

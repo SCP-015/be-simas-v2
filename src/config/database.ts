@@ -21,6 +21,7 @@ import { AssetScheduleUser } from "../modules/asset-schedule/entities/asset-sche
 import { Handover } from "../modules/handover/entities/handover.entity"
 import { HandoverItem } from "../modules/handover/entities/handover-item.entity"
 import { HandoverStockItem } from "../modules/handover/entities/handover-stock-item.entity"
+import { HandoverCustomItem } from "../modules/handover/entities/handover-custom-item.entity"
 import { HandoverField } from "../modules/handover-field/entities/handover-field.entity"
 import { Inventory } from "../modules/inventory/entities/inventory.entity"
 import { InventoryLabel } from "../modules/inventory/entities/inventory-label.entity"
@@ -59,7 +60,7 @@ const defaultDataSource = new DataSource({
     password: config.database.pass,
     database: config.database.name,
     synchronize: config.database.sync,
-    entities: [User, Category, SubCategory, Employee, Branch, Location, Asset, AssetLabel, Attachment, AssetMaintenance, AssetNote, AssetLocation, AssetHolder, AssetLog, AssetStatus, AssetSchedule, AssetScheduleAsset, AssetScheduleUser, Handover, HandoverItem, HandoverStockItem, HandoverField, Inventory, InventoryLabel, InventoryVariant, InventoryStockBalance, InventoryStockOut, InventoryStockOutItem, InventoryStockTransfer, InventoryStockTransferItem, InventoryStockIn, InventoryStockInItem, InventoryStockOpname, InventoryStockOpnameItem, InventoryLog, Role, Permission, PasswordResetToken, Organization, Job, FailedJob, Transfer],
+    entities: [User, Category, SubCategory, Employee, Branch, Location, Asset, AssetLabel, Attachment, AssetMaintenance, AssetNote, AssetLocation, AssetHolder, AssetLog, AssetStatus, AssetSchedule, AssetScheduleAsset, AssetScheduleUser, Handover, HandoverItem, HandoverStockItem, HandoverCustomItem, HandoverField, Inventory, InventoryLabel, InventoryVariant, InventoryStockBalance, InventoryStockOut, InventoryStockOutItem, InventoryStockTransfer, InventoryStockTransferItem, InventoryStockIn, InventoryStockInItem, InventoryStockOpname, InventoryStockOpnameItem, InventoryLog, Role, Permission, PasswordResetToken, Organization, Job, FailedJob, Transfer],
     migrations: [],
     subscribers: [],
 })

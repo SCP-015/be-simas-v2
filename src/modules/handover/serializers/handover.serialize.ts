@@ -1,6 +1,7 @@
 import { Handover } from "../entities/handover.entity"
 import { HandoverItem } from "../entities/handover-item.entity"
 import { HandoverStockItem } from "../entities/handover-stock-item.entity"
+import { HandoverCustomItem } from "../entities/handover-custom-item.entity"
 import { resolveFileUrl } from "../../../core/helpers/serializer-utils"
 import { Attachment } from "../../attachment/entities/attachment.entity"
 import { AttachmentSerializer } from "../../attachment/serializers/attachment.serialize"
@@ -34,6 +35,17 @@ export class HandoverSerializer {
                 unit: item.variant.inventory?.unit ?? "",
                 inventory: item.variant.inventory ? { id: item.variant.inventory.id, name: item.variant.inventory.name, code: item.variant.inventory.code || null } : null,
             } : null,
+        }
+    }
+
+    private static customItem(item: HandoverCustomItem) {
+        return {
+            id: item.id,
+            name: item.name,
+            code: item.code || null,
+            quantity: item.quantity,
+            unit: item.unit || null,
+            note: item.note || null,
         }
     }
 
@@ -74,6 +86,7 @@ export class HandoverSerializer {
             attachments: await AttachmentSerializer.collection(attachments),
             items: await Promise.all((handover.items || []).map((item) => this.item(item))),
             stockItems: (handover.stockItems || []).map((item) => this.stockItem(item)),
+            customItems: (handover.customItems || []).map((item) => this.customItem(item)),
         }
     }
 
