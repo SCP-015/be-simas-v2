@@ -28,7 +28,19 @@ export class StatisticRepository implements IStatisticRepository {
     private applyStatusFilter(query: SelectQueryBuilder<Asset>, statuses?: string[]) {
         if (statuses?.length) {
             query.andWhere(
-                `(SELECT s.status FROM asset_statuses s WHERE s.asset_id = asset.id ORDER BY s.id DESC LIMIT 1) IN (:...statuses)`,
+                `EXISTS (
+                    SELECT 1
+                    FROM asset_statuses latestStatus
+                    INNER JOIN (
+                        SELECT asset_id, MAX(id) AS latest_id
+                        FROM asset_statuses
+                        GROUP BY asset_id
+                    ) latestStatusId
+                        ON latestStatusId.asset_id = latestStatus.asset_id
+                        AND latestStatusId.latest_id = latestStatus.id
+                    WHERE latestStatus.asset_id = asset.id
+                      AND latestStatus.status IN (:...statuses)
+                )`,
                 { statuses }
             )
         }
