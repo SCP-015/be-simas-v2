@@ -27,7 +27,12 @@ export class AssetRepository implements IAssetRepository {
             .leftJoin(AssetHolder, "activeHolder", "activeHolder.assetId = asset.id AND activeHolder.returnedDate IS NULL")
             .leftJoin(Employee, "activeEmployee", "activeEmployee.id = activeHolder.employeeId")
             .leftJoin(Organization, "activeOrganization", "activeOrganization.id = activeHolder.organizationId")
-            .leftJoin(AssetLocation, "lastAssetLocation", "lastAssetLocation.id = (SELECT MAX(sub_al.id) FROM asset_locations sub_al WHERE sub_al.asset_id = asset.id)")
+            .leftJoin(
+                "(SELECT asset_id, MAX(id) AS latest_id FROM asset_locations GROUP BY asset_id)",
+                "latestAssetLocation",
+                "latestAssetLocation.asset_id = asset.id"
+            )
+            .leftJoin(AssetLocation, "lastAssetLocation", "lastAssetLocation.id = latestAssetLocation.latest_id")
             .leftJoin(Location, "lastLoc", "lastLoc.id = lastAssetLocation.locationId")
             .leftJoin(Branch, "lastBranch", "lastBranch.id = lastLoc.branchId")
             .leftJoin("asset_labels", "searchLabel", "searchLabel.entityType = 'Asset' AND searchLabel.entityId = asset.id")
@@ -58,7 +63,19 @@ export class AssetRepository implements IAssetRepository {
         }
         if (filters?.status?.length) {
             query.andWhere(
-                `(SELECT s.status FROM asset_statuses s WHERE s.asset_id = asset.id ORDER BY s.id DESC LIMIT 1) IN (:...statuses)`,
+                `EXISTS (
+                    SELECT 1
+                    FROM asset_statuses latestStatus
+                    INNER JOIN (
+                        SELECT asset_id, MAX(id) AS latest_id
+                        FROM asset_statuses
+                        GROUP BY asset_id
+                    ) latestStatusId
+                        ON latestStatusId.asset_id = latestStatus.asset_id
+                        AND latestStatusId.latest_id = latestStatus.id
+                    WHERE latestStatus.asset_id = asset.id
+                      AND latestStatus.status IN (:...statuses)
+                )`,
                 { statuses: filters.status }
             )
         }
