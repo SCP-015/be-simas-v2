@@ -178,6 +178,7 @@ export class HandoverService {
             : null
 
         const handover = await withTransaction(async (manager) => {
+            const now = new Date()
             const created = await this.repository.save({
                 receivedById: data.receivedById,
                 handedOverById: data.handedOverById,
@@ -188,6 +189,8 @@ export class HandoverService {
                 status: "pending",
                 parentHandoverId,
                 createdByUserId: userId ?? null,
+                createdAt: now,
+                updatedAt: now,
             }, manager)
 
             for (const item of items) {
