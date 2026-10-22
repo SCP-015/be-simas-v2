@@ -33,6 +33,15 @@ describe("generateHandoverPdf", () => {
     // Regression: an asset name containing a control character (e.g. stray bytes from a bad
     // import/sync) used to crash pdf-lib with "WinAnsi cannot encode ..." since neither
     // wrapText nor the direct-drawn fields (labels, signature names) sanitized their input.
+    test("generates an assign PDF with custom items", async () => {
+        const bytes = await generateHandoverPdf(baseHandover({
+            items: [],
+            customItems: [{ name: "ID Card", code: "CARD-001", quantity: 1, unit: "Pcs", note: "For onboarding" }] as any,
+        }))
+        expect(bytes.length).toBeGreaterThan(0)
+        expect(Buffer.from(bytes.slice(0, 5)).toString()).toBe("%PDF-")
+    })
+
     test("does not throw when free-text fields contain control characters", async () => {
         const handover = baseHandover({
             note: "Note with control char  inside",

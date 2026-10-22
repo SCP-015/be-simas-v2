@@ -136,10 +136,6 @@ export class HandoverService {
         const stockItems = data.stockItems ?? []
         const customItems = data.customItems ?? []
 
-        if (customItems.length > 0 && !isReturn) {
-            throw new BadRequestException("Custom items are only supported for return handovers")
-        }
-
         // Receiving employee must exist & be active.
         const receivedByEmployee = await this.employeeService.getById(data.receivedById)
         if (!receivedByEmployee.isActive) {

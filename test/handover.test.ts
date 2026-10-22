@@ -191,6 +191,31 @@ describe("Asset Handover API", () => {
         })
     })
 
+    test("POST /api/handover - persists custom assign items without inventory mutation", async () => {
+        const res = await request(app, "/api/handover", {
+            method: "POST",
+            headers: authHeaders,
+            body: createHandoverData([], employeeId, {
+                receivedById: employeeId,
+                handedOverById: employeeId2,
+                transactionType: "assign",
+                items: [],
+                customItems: [{ name: "ID Card", code: "CARD-ASSIGN-001", quantity: 1, unit: "Pcs", note: "For onboarding" }],
+            }),
+        })
+
+        expect(res.status).toBe(201)
+        expect(res.body.data.transactionType).toBe("assign")
+        expect(res.body.data.customItems).toHaveLength(1)
+        expect(res.body.data.customItems[0]).toMatchObject({
+            name: "ID Card",
+            code: "CARD-ASSIGN-001",
+            quantity: 1,
+            unit: "Pcs",
+            note: "For onboarding",
+        })
+    })
+
     test("POST /api/handover - validation error when items empty", async () => {
         const res = await request(app, "/api/handover", {
             method: "POST",
