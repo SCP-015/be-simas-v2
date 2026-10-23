@@ -14,6 +14,7 @@ import { EmployeeService } from "../employee/employee.service"
 import type { Employee } from "../employee/entities/employee.entity"
 import { OrganizationService } from "../organization/organization.service"
 import { LocationService } from "../location/location.service"
+import type { SubCategory } from "../sub-category/entities/sub-category.entity"
 
 export class AssetService {
     constructor(
@@ -237,10 +238,17 @@ export class AssetService {
         const newLabels = data.labels
         delete data.labels
 
+        const newSubCategoryId = data.subCategoryId
+
         const attachmentIds = data.attachmentIds
         delete data.attachmentIds
 
         this.repository.merge(asset, data)
+        if (newSubCategoryId !== undefined) {
+            // The asset was loaded with the old relation. Keep the relation FK
+            // aligned with the scalar field so TypeORM cannot restore the old ID.
+            asset.subCategory = { id: newSubCategoryId } as SubCategory
+        }
         try {
             await withTransaction(async (manager) => {
                 await this.repository.save(asset, manager)

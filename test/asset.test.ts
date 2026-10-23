@@ -581,6 +581,34 @@ describe("PUT /api/asset/:id", () => {
         expect(body.data.price).toBe(18000000)
     })
 
+    test("should persist a changed sub category", async () => {
+        const { headers } = await registerAndLogin(app)
+        const originalSubCategory = await createTestSubCategory(app, headers)
+        const replacementSubCategory = await createTestSubCategory(app, headers)
+
+        const createRes = await request(app, "/api/asset", {
+            method: "POST",
+            headers,
+            body: createAssetData(originalSubCategory.id),
+        })
+        const assetId = createRes.body.data.id
+
+        const updateRes = await request(app, `/api/asset/${assetId}`, {
+            method: "PUT",
+            headers,
+            body: { subCategoryId: replacementSubCategory.id },
+        })
+
+        expect(updateRes.status).toBe(200)
+        expect(updateRes.body.data.subCategory.id).toBe(replacementSubCategory.id)
+
+        const detailRes = await request(app, `/api/asset/${assetId}`, {
+            method: "GET",
+            headers,
+        })
+        expect(detailRes.body.data.subCategory.id).toBe(replacementSubCategory.id)
+    })
+
     test("re-syncs every employee holder's Nusawork note when the asset's code/name changes", async () => {
         const { headers } = await registerAndLogin(app)
         const subCategory = await createTestSubCategory(app, headers)
