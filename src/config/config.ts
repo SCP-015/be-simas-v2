@@ -93,4 +93,7 @@ export const config = {
         toFile: process.env.LOG_TO_FILE !== 'false',
         jobName: process.env.JOB_NAME || undefined,
     },
+    security: {
+        alertWebhookUrl: process.env.GOOGLE_CHAT_WEBHOOK_URL || '',
+    },
 }

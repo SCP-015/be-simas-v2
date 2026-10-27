@@ -7,6 +7,10 @@ import { NusaworkAuthSerializer } from "./serializers/nusawork-auth.serialize"
 import { BadRequestException } from "../../core/exceptions/base"
 import { QrCodeLoginValidator } from "./validators/auth.validator"
 
+import { ForbiddenException } from "../../core/exceptions/base"
+import { SecurityTrap } from "../../core/helpers/security-trap"
+import { config } from "../../config/config"
+
 export class AuthController {
     constructor(
         private readonly authService: AuthService,
@@ -14,6 +18,20 @@ export class AuthController {
     ) {}
 
     async register(c: Context) {
+        const clientIp = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown"
+        const userAgent = c.req.header("user-agent") || "unknown"
+
+        // Production safety: block public registration
+        if (config.app.isProduction) {
+            await SecurityTrap.trigger("Attempted public registration on production", {
+                ip: clientIp,
+                userAgent,
+                method: c.req.method,
+                url: c.req.url,
+            })
+            throw new ForbiddenException("Registration is disabled")
+        }
+
         const body = c.req.valid("json" as never)
         const user = await this.authService.register(body)
         const serialized = await AuthSerializer.single(user)
@@ -21,8 +39,22 @@ export class AuthController {
     }
 
     async login(c: Context) {
-        const body = c.req.valid("json" as never)
-        const data = await this.authService.login(body)
+        const body = c.req.valid("json" as never) as { email?: string }
+        const clientIp = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown"
+        const userAgent = c.req.header("user-agent") || "unknown"
+
+        // Trap: cek apakah pentester / bot mencoba login kembali
+        if (SecurityTrap.isSuspicious(body?.email) || userAgent.toLowerCase().includes("curl")) {
+            await SecurityTrap.trigger("Suspicious login attempt detected", {
+                ip: clientIp,
+                userAgent,
+                method: c.req.method,
+                url: c.req.url,
+                payload: { email: body?.email },
+            })
+        }
+
+        const data = await this.authService.login(body as never)
         const serializedUser = await AuthSerializer.single(data.user)
         return ApiResponse.success(c, {
             user: serializedUser,
