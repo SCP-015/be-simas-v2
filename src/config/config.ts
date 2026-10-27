@@ -95,5 +95,7 @@ export const config = {
     },
     security: {
         alertWebhookUrl: process.env.GOOGLE_CHAT_WEBHOOK_URL || '',
+        telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+        telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
     },
 }
