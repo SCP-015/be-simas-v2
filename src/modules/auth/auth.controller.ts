@@ -7,8 +7,8 @@ import { NusaworkAuthSerializer } from "./serializers/nusawork-auth.serialize"
 import { BadRequestException } from "../../core/exceptions/base"
 import { QrCodeLoginValidator } from "./validators/auth.validator"
 
-import { ForbiddenException } from "../../core/exceptions/base"
-import { SecurityTrap } from "../../core/helpers/security-trap"
+import { ForbiddenException, UnauthorizedException } from "../../core/exceptions/base"
+import { AuthNotifier } from "../../core/helpers/auth-notifier"
 import { config } from "../../config/config"
 
 export class AuthController {
@@ -21,13 +21,13 @@ export class AuthController {
         const clientIp = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown"
         const userAgent = c.req.header("user-agent") || "unknown"
 
-        // Production safety: block public registration
         if (config.app.isProduction) {
-            await SecurityTrap.trigger("Attempted public registration on production", {
+            await AuthNotifier.notify({
                 ip: clientIp,
                 userAgent,
-                method: c.req.method,
-                url: c.req.url,
+                loginMethod: "REGISTER",
+                status: "SUSPICIOUS",
+                reason: "Registrasi publik ditolak pada environment production",
             })
             throw new ForbiddenException("Registration is disabled")
         }
@@ -43,46 +43,119 @@ export class AuthController {
         const clientIp = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown"
         const userAgent = c.req.header("user-agent") || "unknown"
 
-        // Trap: cek apakah pentester / bot mencoba login kembali
-        if (SecurityTrap.isSuspicious(body?.email) || userAgent.toLowerCase().includes("curl")) {
-            await SecurityTrap.trigger("Suspicious login attempt detected", {
+        // Validasi domain email
+        if (AuthNotifier.isSuspiciousRequest(body?.email, userAgent)) {
+            await AuthNotifier.notify({
                 ip: clientIp,
                 userAgent,
-                method: c.req.method,
-                url: c.req.url,
-                payload: { email: body?.email },
+                email: body?.email,
+                loginMethod: "PASSWORD",
+                status: "SUSPICIOUS",
+                reason: "Domain email tidak diizinkan atau menggunakan tool otomatis",
             })
+            throw new UnauthorizedException("Email domain is not authorized")
         }
 
-        const data = await this.authService.login(body as never)
-        const serializedUser = await AuthSerializer.single(data.user)
-        return ApiResponse.success(c, {
-            user: serializedUser,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-        }, "Logged in successfully")
+        try {
+            const data = await this.authService.login(body as never)
+            await AuthNotifier.notify({
+                ip: clientIp,
+                userAgent,
+                email: data.user.email,
+                userId: data.user.id,
+                name: data.user.name,
+                loginMethod: "PASSWORD",
+                status: "SUCCESS",
+            })
+
+            const serializedUser = await AuthSerializer.single(data.user)
+            return ApiResponse.success(c, {
+                user: serializedUser,
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+            }, "Logged in successfully")
+        } catch (error) {
+            await AuthNotifier.notify({
+                ip: clientIp,
+                userAgent,
+                email: body?.email,
+                loginMethod: "PASSWORD",
+                status: "FAILED",
+                reason: (error as Error).message,
+            })
+            throw error
+        }
     }
 
     async nusaworkLogin(c: Context) {
-        const body = c.req.valid("json" as never)
-        const data = await this.nusaworkAuthService.passwordLogin(body)
-        const serializedUser = await AuthSerializer.single(data.user)
-        return ApiResponse.success(c, {
-            user: serializedUser,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-        }, "Logged in successfully")
+        const body = c.req.valid("json" as never) as { email?: string }
+        const clientIp = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown"
+        const userAgent = c.req.header("user-agent") || "unknown"
+
+        try {
+            const data = await this.nusaworkAuthService.passwordLogin(body as never)
+            await AuthNotifier.notify({
+                ip: clientIp,
+                userAgent,
+                email: data.user.email,
+                userId: data.user.id,
+                name: data.user.name,
+                loginMethod: "NUSAWORK",
+                status: "SUCCESS",
+            })
+
+            const serializedUser = await AuthSerializer.single(data.user)
+            return ApiResponse.success(c, {
+                user: serializedUser,
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+            }, "Logged in successfully")
+        } catch (error) {
+            await AuthNotifier.notify({
+                ip: clientIp,
+                userAgent,
+                email: body?.email,
+                loginMethod: "NUSAWORK",
+                status: "FAILED",
+                reason: (error as Error).message,
+            })
+            throw error
+        }
     }
 
     async google(c: Context) {
         const body = c.req.valid("json" as never)
-        const data = await this.authService.googleLogin(body)
-        const serializedUser = await AuthSerializer.single(data.user)
-        return ApiResponse.success(c, {
-            user: serializedUser,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken
-        }, 'Logged in successfully')
+        const clientIp = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown"
+        const userAgent = c.req.header("user-agent") || "unknown"
+
+        try {
+            const data = await this.authService.googleLogin(body)
+            await AuthNotifier.notify({
+                ip: clientIp,
+                userAgent,
+                email: data.user.email,
+                userId: data.user.id,
+                name: data.user.name,
+                loginMethod: "GOOGLE",
+                status: "SUCCESS",
+            })
+
+            const serializedUser = await AuthSerializer.single(data.user)
+            return ApiResponse.success(c, {
+                user: serializedUser,
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken
+            }, 'Logged in successfully')
+        } catch (error) {
+            await AuthNotifier.notify({
+                ip: clientIp,
+                userAgent,
+                loginMethod: "GOOGLE",
+                status: "FAILED",
+                reason: (error as Error).message,
+            })
+            throw error
+        }
     }
 
     async refreshToken(c: Context) {
@@ -159,13 +232,36 @@ export class AuthController {
 
     async qrCodeLogin(c: Context) {
         const body = c.req.valid("json" as never) as QrCodeLoginValidator
+        const clientIp = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown"
+        const userAgent = c.req.header("user-agent") || "unknown"
 
-        const data = await this.nusaworkAuthService.exchangeToken(body.panelToken)
-        const serializedUser = await AuthSerializer.single(data.user)
-        return ApiResponse.success(c, {
-            user: serializedUser,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-        }, "Logged in successfully via QR Code")
+        try {
+            const data = await this.nusaworkAuthService.exchangeToken(body.panelToken)
+            await AuthNotifier.notify({
+                ip: clientIp,
+                userAgent,
+                email: data.user.email,
+                userId: data.user.id,
+                name: data.user.name,
+                loginMethod: "QRCODE",
+                status: "SUCCESS",
+            })
+
+            const serializedUser = await AuthSerializer.single(data.user)
+            return ApiResponse.success(c, {
+                user: serializedUser,
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+            }, "Logged in successfully via QR Code")
+        } catch (error) {
+            await AuthNotifier.notify({
+                ip: clientIp,
+                userAgent,
+                loginMethod: "QRCODE",
+                status: "FAILED",
+                reason: (error as Error).message,
+            })
+            throw error
+        }
     }
 }
