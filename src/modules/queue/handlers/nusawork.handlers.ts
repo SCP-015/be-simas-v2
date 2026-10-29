@@ -94,6 +94,7 @@ queueService.registerHandler("nusawork.assign", async (payload) => {
             assign_date: formatNusaworkDateTime(log.assignedDate),
             assign_note: log.assignNote || undefined,
             status: "Active",
+            asset_status: "Active",
         },
     })
 
@@ -120,6 +121,7 @@ queueService.registerHandler("nusawork.return", async (payload) => {
             return_date: formatNusaworkDateTime(log.returnedDate),
             return_note: log.returnNote || undefined,
             status: "Returned",
+            asset_status: "Returned",
         },
     })
 })
@@ -130,6 +132,7 @@ queueService.registerHandler("nusawork.update", async (payload) => {
     if (!log) return
     if (log.holderKind !== "employee" || !log.employee || !log.asset) return
 
+    const statusValue = log.returnedDate ? "Returned" : "Active"
     const groupId = await resolveNusaworkGroupId(log)
     await nusaworkHelper.updateAssetSync({
         employee_id: log.employee.employeeId,
@@ -141,7 +144,8 @@ queueService.registerHandler("nusawork.update", async (payload) => {
             assign_note: log.assignNote || undefined,
             return_date: log.returnedDate ? formatNusaworkDateTime(log.returnedDate) : undefined,
             return_note: log.returnNote || undefined,
-            status: log.returnedDate ? "Returned" : "Active",
+            status: statusValue,
+            asset_status: statusValue,
         },
     })
 })
