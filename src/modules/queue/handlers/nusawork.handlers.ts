@@ -93,7 +93,6 @@ queueService.registerHandler("nusawork.assign", async (payload) => {
             asset_name: log.asset.name,
             assign_date: formatNusaworkDateTime(log.assignedDate),
             assign_note: log.assignNote || undefined,
-            status: "Active",
             asset_status: "Active",
         },
     })
@@ -120,7 +119,6 @@ queueService.registerHandler("nusawork.return", async (payload) => {
         fields: {
             return_date: formatNusaworkDateTime(log.returnedDate),
             return_note: log.returnNote || undefined,
-            status: "Returned",
             asset_status: "Returned",
         },
     })
@@ -144,7 +142,6 @@ queueService.registerHandler("nusawork.update", async (payload) => {
             assign_note: log.assignNote || undefined,
             return_date: log.returnedDate ? formatNusaworkDateTime(log.returnedDate) : undefined,
             return_note: log.returnNote || undefined,
-            status: statusValue,
             asset_status: statusValue,
         },
     })
