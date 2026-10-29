@@ -99,7 +99,7 @@ export class NusaworkHelper {
         }
     }): Promise<any> {
         const token = await this.getToken()
-        const res = await this.http.post<any>('/emp/api/client/v4/note/web/202/employee', payload, {
+        const res = await this.http.post<any>(`/emp/api/client/v4/note/web/${config.nusawork.noteTypeId}/employee`, payload, {
             headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export class NusaworkHelper {
     /** Fetches the employee's existing asset-note groups/items — used to locate the `id_group` matching a given `id_holder` before submitting a return. Same note-type id (202) as `createAssetSync`/`returnAssetSync`. */
     async getAssetSyncGroups(employeeId: string): Promise<{ id_group: number; items: { key: string; input: { value: string } }[] }[]> {
         const token = await this.getToken()
-        const res = await this.http.get<any>('/emp/api/client/v4/note/web/202/employee', {
+        const res = await this.http.get<any>(`/emp/api/client/v4/note/web/${config.nusawork.noteTypeId}/employee`, {
             params: { employee_id: employeeId },
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -136,7 +136,7 @@ export class NusaworkHelper {
         }
     }): Promise<any> {
         const token = await this.getToken()
-        const res = await this.http.put<any>('/emp/api/client/v4/note/web/202/employee', payload, {
+        const res = await this.http.put<any>(`/emp/api/client/v4/note/web/${config.nusawork.noteTypeId}/employee`, payload, {
             headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export class NusaworkHelper {
         }
     }): Promise<any> {
         const token = await this.getToken()
-        const res = await this.http.put<any>('/emp/api/client/v4/note/web/202/employee', payload, {
+        const res = await this.http.put<any>(`/emp/api/client/v4/note/web/${config.nusawork.noteTypeId}/employee`, payload, {
             headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ export class NusaworkHelper {
     /** Deletes a note entirely — used when the underlying AssetHolder record itself is deleted. */
     async deleteAssetSync(payload: { employee_id: string; id_group: number }): Promise<any> {
         const token = await this.getToken()
-        const res = await this.http.delete<any>('/emp/api/client/v4/note/web/202/employee', {
+        const res = await this.http.delete<any>(`/emp/api/client/v4/note/web/${config.nusawork.noteTypeId}/employee`, {
             params: { employee_id: payload.employee_id, id_group: payload.id_group },
             headers: {
                 Authorization: `Bearer ${token}`,
