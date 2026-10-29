@@ -298,10 +298,18 @@ export class AssetHolderService {
             }, manager)
         })
 
-        // Record is already gone, so the employee's external id travels in the payload.
+        // Record is already gone, so the employee's external id and cached note group travel in the payload.
         if (log.holderKind === "employee" && log.employee) {
-            await this.queueService.push("nusawork.delete", { holderId: log.id, employeeExternalId: log.employee.employeeId })
+            await this.queueService.push("nusawork.delete", {
+                holderId: log.id,
+                employeeExternalId: log.employee.employeeId,
+                nusaworkGroupId: log.nusaworkGroupId ?? undefined,
+            })
         }
+    }
+
+    async updateNusaworkGroupId(id: number, nusaworkGroupId: number): Promise<void> {
+        await this.repository.save({ id, nusaworkGroupId })
     }
 
     async findActiveHolder(assetId: number): Promise<AssetHolder | null> {

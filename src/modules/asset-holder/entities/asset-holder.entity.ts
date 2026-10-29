@@ -93,6 +93,19 @@ export class AssetHolder {
     @JoinColumn({ name: "return_handover_id" })
     returnHandover?: Relation<Handover> | null
 
+    /** Nusawork note `id_group`, returned when the note was created at assign time. */
+    @Index()
+    @Column({
+        name: "nusawork_group_id",
+        type: "bigint",
+        nullable: true,
+        transformer: {
+            to: (value: number | null | undefined) => value,
+            from: (value: string | number | null | undefined) => (value != null ? Number(value) : null),
+        },
+    })
+    nusaworkGroupId?: number | null
+
     @CreateDateColumn({ name: "created_at" })
     createdAt!: Date
 

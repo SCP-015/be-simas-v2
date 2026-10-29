@@ -54,7 +54,7 @@ export const nusaworkUpdateCalls: any[] = []
 export let nusaworkGroupsResponse: { id_group: number; items: { key: string; input: { value: string } }[] }[] = []
 mock.module("../src/core/helpers/nusawork", () => ({
     nusaworkHelper: {
-        createAssetSync: async (payload: any) => { nusaworkSyncCalls.push(payload); return { success: true } },
+        createAssetSync: async (payload: any) => { nusaworkSyncCalls.push(payload); return { success: true, data: { id_group: 5001 } } },
         getAssetSyncGroups: async () => nusaworkGroupsResponse,
         returnAssetSync: async () => ({ success: true }),
         updateAssetSync: async (payload: any) => { nusaworkUpdateCalls.push(payload); return { success: true } },
@@ -1114,7 +1114,6 @@ describe("Asset - organization holder", () => {
                 asset_name: "Company Laptop",
                 assign_date: "2026-01-01 00:00:00",
                 assign_note: undefined,
-                id_holder: res.body.data.activeHolder.id,
             },
         })
     })

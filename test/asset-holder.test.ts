@@ -33,7 +33,7 @@ mock.module("../src/core/helpers/nusawork", () => ({
         createAssetSync: async (payload: any) => {
             nusaworkSyncCalls.push(payload)
             if (nusaworkSyncShouldFail) throw new Error("Nusawork unavailable")
-            return { success: true }
+            return { success: true, data: { id_group: 2877 } }
         },
         getAssetSyncGroups: async () => nusaworkGroupsResponse,
         returnAssetSync: async (payload: any) => {
@@ -168,7 +168,6 @@ describe("Asset Holder API Tests", () => {
                 asset_name: "Dell Precision",
                 assign_date: "2026-06-19 00:00:00",
                 assign_note: "Given to Alice",
-                id_holder: res.body.data.id,
             },
         })
     })

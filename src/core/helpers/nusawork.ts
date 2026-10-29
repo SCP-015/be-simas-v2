@@ -95,7 +95,7 @@ export class NusaworkHelper {
             asset_name: string
             assign_date: string
             assign_note?: string
-            id_holder: number
+            id_holder?: number
         }
     }): Promise<any> {
         const token = await this.getToken()
