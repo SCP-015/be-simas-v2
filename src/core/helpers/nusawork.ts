@@ -96,6 +96,7 @@ export class NusaworkHelper {
             assign_date: string
             assign_note?: string
             id_holder?: number
+            status?: string
         }
     }): Promise<any> {
         const token = await this.getToken()
@@ -133,6 +134,7 @@ export class NusaworkHelper {
         fields: {
             return_date: string
             return_note?: string
+            status?: string
         }
     }): Promise<any> {
         const token = await this.getToken()
@@ -157,6 +159,7 @@ export class NusaworkHelper {
             assign_note?: string
             return_date?: string
             return_note?: string
+            status?: string
         }
     }): Promise<any> {
         const token = await this.getToken()
