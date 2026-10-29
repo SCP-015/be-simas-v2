@@ -12,6 +12,7 @@
     "sync:organization": "bun run src/jobs/sync-organization.job.ts",
     "sync:nusawork": "bun run src/jobs/sync-nusawork.job.ts",
     "backfill:nusawork-group-id": "bun run src/jobs/backfill-nusawork-group-id.job.ts",
+    "backfill:nusawork-returned-status": "bun run src/jobs/backfill-nusawork-returned-status.job.ts",
     "job:asset-schedule-reminder": "bun run src/jobs/asset-schedule-reminder.job.ts",
     "queue:work": "bun run src/jobs/queue-worker.job.ts"
   },
