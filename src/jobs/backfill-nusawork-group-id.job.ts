@@ -17,6 +17,16 @@ import { IsNull } from "typeorm"
 
 const includeReturned = process.argv.includes("--all")
 
+function formatNusaworkDateTime(input: string): string {
+    const dateOnlyMatch = input.match(/^(\d{4}-\d{2}-\d{2})$/)
+    if (dateOnlyMatch) {
+        return `${dateOnlyMatch[1]} 00:00:00`
+    }
+    const date = new Date(input)
+    const pad = (n: number) => String(n).padStart(2, "0")
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
 async function backfill() {
     logger.info("Initializing database connection...")
     await AppDataSource.initialize()
@@ -91,6 +101,27 @@ async function backfill() {
             await holderRepo.update(holder.id, { nusaworkGroupId: matchedGroup.id_group })
             matchedCount++
             logger.info(`[${i + 1}/${holders.length}] Holder ${holder.id} (Asset: ${holder.asset?.code}) -> matched id_group ${matchedGroup.id_group}`)
+
+            // Sync asset_status to Nusawork note
+            const targetStatus = holder.returnedDate ? "Returned" : "Active"
+            try {
+                await nusaworkHelper.updateAssetSync({
+                    employee_id: empExternalId,
+                    id_group: matchedGroup.id_group,
+                    fields: {
+                        asset_code: holder.asset?.code || "",
+                        asset_name: holder.asset?.name || "",
+                        assign_date: formatNusaworkDateTime(holder.assignedDate),
+                        assign_note: holder.assignNote || undefined,
+                        return_date: holder.returnedDate ? formatNusaworkDateTime(holder.returnedDate) : undefined,
+                        return_note: holder.returnNote || undefined,
+                        asset_status: targetStatus,
+                    },
+                })
+                logger.info(`  -> updated Nusawork note ${matchedGroup.id_group} asset_status to "${targetStatus}"`)
+            } catch (err: any) {
+                logger.warn(`  -> failed to update Nusawork asset_status for note ${matchedGroup.id_group}: ${err?.message || err}`)
+            }
         } else {
             notFoundCount++
             logger.warn(`[${i + 1}/${holders.length}] Holder ${holder.id} (Asset: ${holder.asset?.code}): no matching note in Nusawork for ${empExternalId}`)
